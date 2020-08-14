@@ -1,31 +1,31 @@
 node {
-   def commit_id
+   def commit_id //Variable
    stage('Preparation') {
-     checkout scm
-     sh "git rev-parse --short HEAD > .git/commit-id"
-     commit_id = readFile('.git/commit-id').trim()
+     checkout scm //Clone the Repo
+     sh "git rev-parse --short HEAD > .git/commit-id" //Creaete Commit id
+     commit_id = readFile('.git/commit-id').trim() //Set Variable commid_id to the commit_id we've just reated
    }
    stage('test') {
-     def myTestContainer = docker.image('node:4.6')
-     myTestContainer.pull()
-     myTestContainer.inside {
-       sh 'npm install --only=dev'
-       sh 'npm test'
+     def myTestContainer = docker.image('node:4.6') //Set Variable with docker image
+     myTestContainer.pull() // Pull the image
+     myTestContainer.inside { //Set the container options : 
+       sh 'npm install --only=dev' //Working in the new container
+       sh 'npm test' //Working in the new container 
      }
    }
    stage('test with a DB') {
-     def mysql = docker.image('mysql').run("-e MYSQL_ALLOW_EMPTY_PASSWORD=yes") 
-     def myTestContainer = docker.image('node:4.6')
-     myTestContainer.pull()
+     def mysql = docker.image('mysql').run("-e MYSQL_ALLOW_EMPTY_PASSWORD=yes") //Set Variable with mysql image and run it with enviroment variable.
+     def myTestContainer = docker.image('node:4.6') //Set Variable with node image
+     myTestContainer.pull() //Pull the node image
      myTestContainer.inside("--link ${mysql.id}:mysql") { // using linking, mysql will be available at host: mysql, port: 3306
-          sh 'npm install --only=dev' 
-          sh 'npm test'                     
+          sh 'npm install --only=dev' //Working in nodejs container
+          sh 'npm test'               //Working in nodejs container
      }                                   
-     mysql.stop()
+     mysql.stop()            //Stop the mysql container.
    }                                     
    stage('docker build/push') {            
      docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
-       def app = docker.build("wardviaene/docker-nodejs-demo:${commit_id}", '.').push()
+       def app = docker.build("munmo/docker-nodejs-demo:${commit_id}", '.').push()
      }                                     
    }                                       
 }                                          
